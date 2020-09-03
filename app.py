@@ -22,7 +22,8 @@ def start_build_background(*args):
             socketio.emit('eventLogs', logstr)
 
     result = container.wait()
-    socketio.emit('buildResult', result)
+    print('Build Results', result)
+    socketio.emit('buildResult', 'Error - {} and Status Code - {}'.format(result['Error'], result['StatusCode']))
 
 
 @app.route('/')

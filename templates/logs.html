@@ -10,6 +10,8 @@
     <br>
     <div id="add_to_me"></div>
 
+    <div id="build-result"></div>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
     <script>
@@ -22,7 +24,8 @@
           document.getElementById("add_to_me").innerHTML += `<p>${data}</p>`; 
       });
       socket.on('buildResult', (data) => {
-          alert('Build Result is', data)
+          console.log('Build Result is', data)
+          document.getElementById("build-result").innerHTML += `<b>Build Result<b><p>Status is ${data}</p>`;
       });
       socket.on('disconnect', () => {
           console.log("Socket disconnected")
