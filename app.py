@@ -1,16 +1,10 @@
-from flask import Flask, request
+from flask import Flask, request, render_template
 from flask_socketio import emit, SocketIO, send
 import docker
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode=None)
 client = docker.from_env()
-
-
-@app.route('/')
-def hello_world():
-    return 'Hello World!'
-
 
 def start_build_background(*args):
     print(args)
@@ -29,6 +23,16 @@ def start_build_background(*args):
 
     result = container.wait()
     socketio.emit('buildResult', result)
+
+
+@app.route('/')
+def hello_world():
+    return 'Hello World!'
+
+
+@app.route('/build_logs')
+def build_logs():
+    return render_template('logs.html')
 
 
 @app.route('/request_build', methods=["POST"])
