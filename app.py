@@ -11,6 +11,7 @@ def start_build_background(*args):
     github_url = args[0]
     folder_name = args[1]
     package_manager = args[2]
+    topic = args[3]
 
     if package_manager == 'npm':
         image = 'argonpm'
@@ -28,7 +29,7 @@ def start_build_background(*args):
         for log in container.logs(stream=True):
             logstr = str(log, 'utf-8')
             print(logstr)
-            socketio.emit('eventLogs', logstr)
+            socketio.emit(topic, logstr)
 
     result = container.wait()
     print('Build Results', result)
@@ -51,7 +52,8 @@ def request_build():
     github_url = data['github_url']
     folder_name = data['folder_name']
     package_manager = data['package_manager']
-    socketio.start_background_task(start_build_background, github_url, folder_name, package_manager)
+    topic = data["topic"]
+    socketio.start_background_task(start_build_background, github_url, folder_name, package_manager,topic)
 
     return {'result': 'Build Started'}
 
