@@ -6,29 +6,26 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode=None)
 client = docker.from_env()
 
+
 def start_build_background(*args):
     print(args)
     github_url = args[0]
     folder_name = args[1]
-    package_manager = args[2]
-    topic = args[3]
-    build_command = args[4]
-    publish_dir = args[5]
+    framework = args[2]
+    package_manager = args[3]
+    topic = args[4]
+    build_command = args[5]
+    publish_dir = args[6]
 
-
-    if package_manager == 'npm':
-        image = 'argonpm'
-    elif package_manager == 'yarn':
-        image = 'argoyarn'
-    else:
-        image = 'argonpm'
+    image = 'argo'+framework
 
     if github_url:
         container = client.containers.run(image, detach=True, environment={
             "GIT_HUB_URL": github_url,
             "FOLDER_NAME": folder_name,
-            "BUILD_COMMAND":build_command,
-            "PUBLISH_DIR":publish_dir
+            "BUILD_COMMAND": build_command,
+            "PUBLISH_DIR": publish_dir,
+            "PACKAGE_MANAGER": package_manager
         })
 
         for log in container.logs(stream=True):
@@ -38,7 +35,8 @@ def start_build_background(*args):
 
     result = container.wait()
     print('Build Results', result)
-    socketio.emit('buildResult', 'Error - {} and Status Code - {}'.format(result['Error'], result['StatusCode']))
+    socketio.emit('buildResult', 'Error - {} and Status Code - {}'.format(
+        result['Error'], result['StatusCode']))
 
 
 @app.route('/')
@@ -51,16 +49,18 @@ def build_logs():
     return render_template('logs.html')
 
 
-@app.route('/request_build', methods=["POST"])
+@app.route('/request_build/', methods=["POST"])
 def request_build():
     data = request.get_json()
+    framework = data['framework']
     github_url = data['github_url']
     folder_name = data['folder_name']
     package_manager = data['package_manager']
     topic = data["topic"]
     build_command = data["build_command"]
     publish_dir = data["publish_dir"]
-    socketio.start_background_task(start_build_background, github_url, folder_name, package_manager,topic,build_command,publish_dir)
+    socketio.start_background_task(start_build_background, github_url,
+                                   folder_name, framework, package_manager, topic, build_command, publish_dir)
 
     return {'result': 'Build Started'}
 
