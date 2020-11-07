@@ -3,7 +3,7 @@
     <a href="https://imgur.com/J5O9d2O"><img src="https://i.imgur.com/J5O9d2O.png" title="source: imgur.com" alt="ArGo logo (light version)" width="210" /></a>
   </a>
 
-  <h3 align="center">ArGo Docker Deployment</h3>
+  <h3 align="center">ArGo Flask Backend</h3>
 
   <p align="center">
    :rocket: Flask server which runs in the background for deploying code on Arweave
