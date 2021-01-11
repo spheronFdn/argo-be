@@ -16,6 +16,8 @@ def start_build_background(*args):
     topic = args[4]
     build_command = args[5]
     publish_dir = args[6]
+    is_workspace=args[7]
+    workspace=args[8]
 
     image = 'argo'+framework
 
@@ -25,7 +27,9 @@ def start_build_background(*args):
             "FOLDER_NAME": folder_name,
             "BUILD_COMMAND": build_command,
             "PUBLISH_DIR": publish_dir,
-            "PACKAGE_MANAGER": package_manager
+            "PACKAGE_MANAGER": package_manager,
+            "IS_WORKSPACE":is_workspace,
+            "WORKSPACE":workspace
         })
 
         for log in container.logs(stream=True):
@@ -59,8 +63,10 @@ def request_build():
     topic = data["topic"]
     build_command = data["build_command"]
     publish_dir = data["publish_dir"]
+    is_workspace=data["is_workspace"]
+    workspace=data["workspace"]
     socketio.start_background_task(start_build_background, github_url,
-                                   folder_name, framework, package_manager, topic, build_command, publish_dir)
+                                   folder_name, framework, package_manager, topic, build_command, publish_dir,is_workspace,workspace)
 
     return {'result': 'Build Started'}
 
