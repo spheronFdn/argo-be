@@ -6,7 +6,7 @@
   <h3 align="center">ArGo Flask Backend</h3>
 
   <p align="center">
-   :rocket: Flask server which runs in the background for deploying code on Arweave
+   ⚒ Flask server which runs in the background for deploying code on Arweave
  </p>
 </p>
 
