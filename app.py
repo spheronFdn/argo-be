@@ -7,6 +7,16 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode=None)
 client = docker.from_env()
 
 
+def _checkForImage(imagename):
+    try:
+        client.images.get(imagename)
+        return True
+    except docker.errors.ImageNotFound:
+        return False
+    except:
+        return None
+
+
 def start_build_background(*args):
     print(args)
     github_url = args[0]
@@ -20,6 +30,15 @@ def start_build_background(*args):
     workspace=args[8]
 
     image = 'argo'+framework
+
+    imageExists = _checkForImage(image)
+
+    if imageExists == False:
+        socketio.emit('buildResult', f'Error - Image {image} does not exists and Status Code - 1')
+        return
+    elif imageExists == None:
+        socketio.emit('buildResult', 'Internal API Error and Status Code - 1')
+        return
 
     if github_url:
         container = client.containers.run(image, detach=True, environment={
