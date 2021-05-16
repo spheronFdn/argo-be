@@ -75,14 +75,14 @@ def start_build_background(*args):
 
         for log in container.logs(stream=True):
             logstr = str(log, 'utf-8')
-            socketio.emit(topic, logstr)
+            socketio.emit(f'build-logs-{topic}', logstr)
 
         result = container.wait()
         build_time = calc_buildtime_in_microseconds(api_cli.inspect_container(container.id)['State'])
         container.remove()
 
         if result['StatusCode']:
-            socketio.emit(f'build-error-{topic}', json.dumps({
+            socketio.emit(f'build-failed-{topic}', json.dumps({
                 'statusCode': 1,
                 'msg': result['Error'],
             }))
