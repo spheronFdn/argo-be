@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template
 from flask_socketio import emit, SocketIO, send
 import docker
+import json
 from datetime import datetime
 
 app = Flask(__name__)
@@ -51,9 +52,15 @@ def start_build_background(*args):
     imageExists = _checkForImage(image)
 
     if imageExists == False:
-        socketio.emit('buildResult', f'Error - Image {image} does not exists and Status Code - 1')
+        socketio.emit(f'build-error-{topic}', json.dumps({
+            'statusCode': 1,
+            'msg': f'Image {image} does not exists',
+        }))
     elif imageExists == None:
-        socketio.emit('buildResult', 'Internal API Error and Status Code - 1')
+        socketio.emit(f'build-error-{topic}', json.dumps({
+            'statusCode': 1,
+            'msg': 'Internal API error',
+        }))
     else:
         # Why did we check if github url exists?
         container = client.containers.run(image, detach=True, environment={
@@ -73,8 +80,18 @@ def start_build_background(*args):
         result = container.wait()
         build_time = calc_buildtime_in_microseconds(api_cli.inspect_container(container.id)['State'])
         container.remove()
-        socketio.emit('buildResult', 'Error - {}, Status Code - {}, build time - {}'.format(
-            result['Error'], result['StatusCode'], build_time))
+
+        if result['StatusCode']:
+            socketio.emit(f'build-error-{topic}', json.dumps({
+                'statusCode': 1,
+                'msg': result['Error'],
+            }))
+        else:
+            socketio.emit(f'build-success-{topic}', json.dumps({
+                'statusCode': 0,
+                'msg': 'Build success',
+                'buildTime': build_time,
+            }))
 
 
 @app.route('/')
