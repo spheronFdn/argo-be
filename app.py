@@ -1,10 +1,29 @@
 from flask import Flask, request, render_template
 from flask_socketio import emit, SocketIO, send
 import docker
+from datetime import datetime
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode=None)
 client = docker.from_env()
+api_cli = docker.APIClient()
+
+
+def calc_buildtime_in_microseconds(container_state):
+    def erase_microseconds(time):
+        return time.split('.')[0]
+
+    format = "%Y-%m-%dT%H:%M:%S"
+    start_time = container_state['StartedAt']
+    end_time = container_state['FinishedAt']   
+
+    start = erase_microseconds(start_time)
+    end = erase_microseconds(end_time)
+
+    start_datetime = datetime.strptime(start, format)
+    end_datetime = datetime.strptime(end, format)
+
+    return int((end_datetime - start_datetime).total_seconds() * 1000)
 
 
 def _checkForImage(imagename):
@@ -18,7 +37,6 @@ def _checkForImage(imagename):
 
 
 def start_build_background(*args):
-    print(args)
     github_url = args[0]
     folder_name = args[1]
     framework = args[2]
@@ -30,17 +48,14 @@ def start_build_background(*args):
     workspace=args[8]
 
     image = 'argo'+framework
-
     imageExists = _checkForImage(image)
 
     if imageExists == False:
         socketio.emit('buildResult', f'Error - Image {image} does not exists and Status Code - 1')
-        return
     elif imageExists == None:
         socketio.emit('buildResult', 'Internal API Error and Status Code - 1')
-        return
-
-    if github_url:
+    else:
+        # Why did we check if github url exists?
         container = client.containers.run(image, detach=True, environment={
             "GIT_HUB_URL": github_url,
             "FOLDER_NAME": folder_name,
@@ -53,13 +68,13 @@ def start_build_background(*args):
 
         for log in container.logs(stream=True):
             logstr = str(log, 'utf-8')
-            print(logstr)
             socketio.emit(topic, logstr)
 
-    result = container.wait()
-    print('Build Results', result)
-    socketio.emit('buildResult', 'Error - {} and Status Code - {}'.format(
-        result['Error'], result['StatusCode']))
+        result = container.wait()
+        build_time = calc_buildtime_in_microseconds(api_cli.inspect_container(container.id)['State'])
+        container.remove()
+        socketio.emit('buildResult', 'Error - {}, Status Code - {}, build time - {}'.format(
+            result['Error'], result['StatusCode'], build_time))
 
 
 @app.route('/')
